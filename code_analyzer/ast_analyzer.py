@@ -2,31 +2,31 @@ import ast
 
 class CodeAnalyzer(ast.NodeVisitor):
     def __init__(self):
-        self.structure = {}
+        self.structure = {"classes": {}, "functions": []}
+        self.current_class = None
 
     def visit_ClassDef(self, node):
-        self.structure[node.name] = {'methods': []}
+        self.current_class = node.name
+        self.structure["classes"][node.name] = {'methods': []}
         self.generic_visit(node)
+        self.current_class = None
 
     def visit_FunctionDef(self, node):
-        if isinstance(node.parent, ast.ClassDef):
-            self.structure[node.parent.name]['methods'].append(node.name)
+        if self.current_class is not None:
+            self.structure["classes"][self.current_class]['methods'].append(node.name)
+        else:
+            self.structure["functions"].append(node.name)
         self.generic_visit(node)
-
-def attach_parent_nodes(node, parent=None):
-    for child in ast.iter_child_nodes(node):
-        child.parent = parent
-        attach_parent_nodes(child, parent=node)
 
 def analyze_code(code):
     tree = ast.parse(code)
-    attach_parent_nodes(tree)
     analyzer = CodeAnalyzer()
     analyzer.visit(tree)
     return analyzer.structure
 
 # Example usage
 code = """
+ultimate_answer = 42
 class MyClass:
     def method_one(self):
         pass
@@ -35,6 +35,7 @@ class MyClass:
         pass
 
 def individual_func1(var1):
+    print(ultimate_answer)
     return var1
 
 def individual_func2(var2):
