@@ -23,25 +23,10 @@ class CodeAnalyzer(ast.NodeVisitor):
         self.current_class = None
 
     def visit_FunctionDef(self, node):
-        function_name = node.name
-        method_variables = self.extract_variables(node)
-        parameters = self.extract_parameters(node)
-        if self.current_class is not None:
-            self.current_method = function_name
-            self.structure["classes"][self.current_class]['methods'][function_name] = {
-                'method_variables': method_variables,
-                'parameters': parameters,
-                'line_number': node.lineno
-            }
-        else:
-            self.current_function = function_name
-            self.structure["functions"][function_name] = {
-                'function_variables': method_variables,
-                'parameters': parameters,
-                'line_number': node.lineno
-            }
-        self.current_method = None
-        self.current_function = None
+        self.handle_function(node)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.handle_function(node, is_async=True)
 
     def visit_Assign(self, node):
         for target in node.targets:
@@ -55,6 +40,30 @@ class CodeAnalyzer(ast.NodeVisitor):
                     # Global variable
                     self.structure["global_variables"].append(variable_info)
         self.generic_visit(node)
+
+    def handle_function(self, node, is_async=False):
+        function_name = node.name
+        method_variables = self.extract_variables(node)
+        parameters = self.extract_parameters(node)
+        func_type = 'async_method' if is_async else 'method'
+        if self.current_class is not None:
+            self.current_method = function_name
+            self.structure["classes"][self.current_class]['methods'][function_name] = {
+                'method_variables': method_variables,
+                'parameters': parameters,
+                'line_number': node.lineno,
+                'type': func_type
+            }
+        else:
+            self.current_function = function_name
+            self.structure["functions"][function_name] = {
+                'function_variables': method_variables,
+                'parameters': parameters,
+                'line_number': node.lineno,
+                'type': 'async_function' if is_async else 'function'
+            }
+        self.current_method = None
+        self.current_function = None
 
     def extract_variables(self, node):
         variables = []
@@ -77,8 +86,10 @@ def analyze_code_from_file(file_path):
     analyzer.visit(tree)
     return analyzer.structure
 
+
 # Example usage with a file path
 file_path = '/home/richardliu/code/github.com/geekan/MetaGPT/metagpt/provider/zhipuai_api.py'  # Replace with the path to your Python file
+# file_path = '/home/richardliu/code/github.com/c4fun/zhipuai-playground/samples/gradio-glm4.py'
 
 result = analyze_code_from_file(file_path)
 json_result = json.dumps(result, indent=4)
