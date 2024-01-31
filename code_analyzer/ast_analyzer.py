@@ -4,6 +4,7 @@ import json
 class CodeAnalyzer(ast.NodeVisitor):
     def __init__(self):
         self.structure = {
+            "imports": [],
             "classes": {}, 
             "functions": {}, 
             "global_variables": []
@@ -11,6 +12,20 @@ class CodeAnalyzer(ast.NodeVisitor):
         self.current_class = None
         self.current_method = None
         self.current_function = None
+
+    def visit_Import(self, node):
+        for name in node.names:
+            self.structure["imports"].append({'import': name.name, 'line_number': node.lineno})
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        for name in node.names:
+            self.structure["imports"].append({
+                'from': node.module,
+                'import': name.name,
+                'line_number': node.lineno
+            })
+        self.generic_visit(node)
 
     def visit_ClassDef(self, node):
         self.current_class = node.name
