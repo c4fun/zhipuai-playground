@@ -14,9 +14,11 @@ class CodeAnalyzer(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         self.current_class = node.name
+        docstring = ast.get_docstring(node)
         self.structure["classes"][node.name] = {
             'methods': {}, 
             'class_variables': [],
+            'docstring': docstring,
             'line_number': node.lineno
         }
         self.generic_visit(node)
@@ -43,6 +45,7 @@ class CodeAnalyzer(ast.NodeVisitor):
 
     def handle_function(self, node, is_async=False):
         function_name = node.name
+        docstring = ast.get_docstring(node)
         method_variables = self.extract_variables(node)
         parameters = self.extract_parameters(node)
         func_type = 'async_method' if is_async else 'method'
@@ -51,6 +54,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             self.structure["classes"][self.current_class]['methods'][function_name] = {
                 'method_variables': method_variables,
                 'parameters': parameters,
+                'docstring': docstring,
                 'line_number': node.lineno,
                 'type': func_type
             }
@@ -59,6 +63,7 @@ class CodeAnalyzer(ast.NodeVisitor):
             self.structure["functions"][function_name] = {
                 'function_variables': method_variables,
                 'parameters': parameters,
+                'docstring': docstring,
                 'line_number': node.lineno,
                 'type': 'async_function' if is_async else 'function'
             }
