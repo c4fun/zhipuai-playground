@@ -18,6 +18,7 @@ def predict(message, history):
         history_zhipuai_format.append({"role": "user", "content": human })
         history_zhipuai_format.append({"role": "assistant", "content":assistant})
     history_zhipuai_format.append({"role": "user", "content": message})
+    print(f'history_zhipuai_format: {history_zhipuai_format}')
 
     # print(history_zhipuai_format)
 
